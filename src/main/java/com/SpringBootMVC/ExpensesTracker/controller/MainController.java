@@ -10,10 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -22,8 +19,8 @@ import java.util.List;
 @Controller
 public class MainController {
 
-    ExpenseService expenseService;
-    CategoryService categoryService;
+    private final ExpenseService expenseService;
+    private final CategoryService categoryService;
 
     @Autowired
     public MainController(ExpenseService expenseService, CategoryService categoryService) {
@@ -32,14 +29,14 @@ public class MainController {
     }
 
     @GetMapping("/")
-    public String landingPage(HttpSession session, Model model){
+    public String landingPage(HttpSession session, Model model) {
         Client client = (Client) session.getAttribute("client");
         model.addAttribute("sessionClient", client);
         return "landing-page";
     }
 
     @GetMapping("/showAdd")
-    public String addExpense(Model model, HttpSession session){
+    public String addExpense(Model model, HttpSession session) {
         if (session.getAttribute("client") == null) {
             return "redirect:/login";
         }
@@ -48,7 +45,7 @@ public class MainController {
     }
 
     @PostMapping("/submitAdd")
-    public String submitAdd(@ModelAttribute("expense") ExpenseDTO expenseDTO, HttpSession session){
+    public String submitAdd(@ModelAttribute("expense") ExpenseDTO expenseDTO, HttpSession session) {
         Client client = (Client) session.getAttribute("client");
 
         if (client == null) {
@@ -61,10 +58,11 @@ public class MainController {
     }
 
     @GetMapping("/list")
-    public String list(Model model, HttpSession session){
+    public String list(Model model, HttpSession session) {
+
         Client client = (Client) session.getAttribute("client");
 
-        // ✅ PREVENT 500 ERROR
+        // ✅ THIS IS THE MAIN FIX FOR YOUR 500 ERROR
         if (client == null) {
             return "redirect:/login";
         }
@@ -72,14 +70,20 @@ public class MainController {
         int clientId = client.getId();
         List<Expense> expenseList = expenseService.findAllExpensesByClientId(clientId);
 
-        for (Expense expense : expenseList){
+        for (Expense expense : expenseList) {
             expense.setCategoryName(
-                categoryService.findCategoryById(expense.getCategory().getId()).getName()
+                    categoryService.findCategoryById(expense.getCategory().getId()).getName()
             );
-            expense.setDate(LocalDateTime.parse(expense.getDateTime(),
-                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
-            expense.setTime(LocalDateTime.parse(expense.getDateTime(),
-                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
+
+            expense.setDate(
+                    LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                            .toLocalDate().toString()
+            );
+
+            expense.setTime(
+                    LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                            .toLocalTime().toString()
+            );
         }
 
         model.addAttribute("expenseList", expenseList);
@@ -88,7 +92,8 @@ public class MainController {
     }
 
     @GetMapping("/showUpdate")
-    public String showUpdate(@RequestParam("expId") int id, Model model, HttpSession session){
+    public String showUpdate(@RequestParam("expId") int id, Model model, HttpSession session) {
+
         if (session.getAttribute("client") == null) {
             return "redirect:/login";
         }
@@ -109,7 +114,7 @@ public class MainController {
     @PostMapping("/submitUpdate")
     public String update(@RequestParam("expId") int id,
                          @ModelAttribute("expense") ExpenseDTO expenseDTO,
-                         HttpSession session){
+                         HttpSession session) {
 
         Client client = (Client) session.getAttribute("client");
 
@@ -125,7 +130,8 @@ public class MainController {
     }
 
     @GetMapping("/delete")
-    public String delete(@RequestParam("expId") int id, HttpSession session){
+    public String delete(@RequestParam("expId") int id, HttpSession session) {
+
         if (session.getAttribute("client") == null) {
             return "redirect:/login";
         }
@@ -137,7 +143,7 @@ public class MainController {
     @PostMapping("/processFilter")
     public String processFilter(@ModelAttribute("filter") FilterDTO filter,
                                 Model model,
-                                HttpSession session){
+                                HttpSession session) {
 
         if (session.getAttribute("client") == null) {
             return "redirect:/login";
@@ -145,14 +151,20 @@ public class MainController {
 
         List<Expense> expenseList = expenseService.findFilterResult(filter);
 
-        for (Expense expense : expenseList){
+        for (Expense expense : expenseList) {
             expense.setCategoryName(
-                categoryService.findCategoryById(expense.getCategory().getId()).getName()
+                    categoryService.findCategoryById(expense.getCategory().getId()).getName()
             );
-            expense.setDate(LocalDateTime.parse(expense.getDateTime(),
-                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
-            expense.setTime(LocalDateTime.parse(expense.getDateTime(),
-                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
+
+            expense.setDate(
+                    LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                            .toLocalDate().toString()
+            );
+
+            expense.setTime(
+                    LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                            .toLocalTime().toString()
+            );
         }
 
         model.addAttribute("expenseList", expenseList);
