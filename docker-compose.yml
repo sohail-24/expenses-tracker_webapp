@@ -1,40 +1,36 @@
-version: "3.8"
+version: '3.8'
+
 services:
   mysql:
-    image: mysql:latest
-    container_name: mysql
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: Test@123
       MYSQL_DATABASE: expenses_tracker
     volumes:
-      - ./mysql-data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     networks:
-      - appbridge
-    healthcheck:
-      test: ["CMD","mysqladmin","ping","-h","localhost","-uroot","-pTest@123"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: always
+      - exp-net
 
-  mainapp:
-    image: snehcreate/expensetracker_v3
-    container_name: Expensetracker
-    environment:
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/expenses_tracker?allowPublicKeyRetrieval=true&useSSL=false"
-      SPRING_DATASOURCE_PASSWORD: Test@123
+  app:
+    image: sohail28/expenses-tracker:latest
+    container_name: expenses-app
     ports:
       - "8080:8080"
-    networks:
-      - appbridge
     depends_on:
       - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/expenses_tracker?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Test@123
+    networks:
+      - exp-net
     restart: always
 
 networks:
-  appbridge:
+  exp-net:
 
 volumes:
-  mysql-data:
+  mysql_data:
+
