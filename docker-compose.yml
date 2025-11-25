@@ -1,36 +1,27 @@
 version: '3.8'
 
 services:
-  mysql:
+  mysql-db:
     image: mysql:8.0
     container_name: mysql-db
-    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Test@123
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: expenses_tracker
-    volumes:
-      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
     networks:
-      - exp-net
+      - expenses-net
 
-  app:
+  expenses-app:
     image: sohail28/expenses-tracker:latest
     container_name: expenses-app
     ports:
-      - "8080:8080"
+      - "9090:9090"
     depends_on:
-      - mysql
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/expenses_tracker?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: Test@123
+      - mysql-db
     networks:
-      - exp-net
-    restart: always
+      - expenses-net
 
 networks:
-  exp-net:
-
-volumes:
-  mysql_data:
-
+  expenses-net:
+    driver: bridge
