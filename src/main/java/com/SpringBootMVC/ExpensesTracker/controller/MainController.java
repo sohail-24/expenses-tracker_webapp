@@ -7,11 +7,9 @@ import com.SpringBootMVC.ExpensesTracker.entity.Expense;
 import com.SpringBootMVC.ExpensesTracker.service.CategoryService;
 import com.SpringBootMVC.ExpensesTracker.service.ExpenseService;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +21,7 @@ import java.util.List;
 
 @Controller
 public class MainController {
+
     ExpenseService expenseService;
     CategoryService categoryService;
 
@@ -40,7 +39,10 @@ public class MainController {
     }
 
     @GetMapping("/showAdd")
-    public String addExpense(Model model){
+    public String addExpense(Model model, HttpSession session){
+        if (session.getAttribute("client") == null) {
+            return "redirect:/login";
+        }
         model.addAttribute("expense", new ExpenseDTO());
         return "add-expense";
     }
@@ -48,6 +50,11 @@ public class MainController {
     @PostMapping("/submitAdd")
     public String submitAdd(@ModelAttribute("expense") ExpenseDTO expenseDTO, HttpSession session){
         Client client = (Client) session.getAttribute("client");
+
+        if (client == null) {
+            return "redirect:/login";
+        }
+
         expenseDTO.setClientId(client.getId());
         expenseService.save(expenseDTO);
         return "redirect:/list";
@@ -56,22 +63,39 @@ public class MainController {
     @GetMapping("/list")
     public String list(Model model, HttpSession session){
         Client client = (Client) session.getAttribute("client");
+
+        // ✅ PREVENT 500 ERROR
+        if (client == null) {
+            return "redirect:/login";
+        }
+
         int clientId = client.getId();
         List<Expense> expenseList = expenseService.findAllExpensesByClientId(clientId);
+
         for (Expense expense : expenseList){
-            expense.setCategoryName(categoryService.findCategoryById(expense.getCategory().getId()).getName());
-            expense.setDate(LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
-            expense.setTime(LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
+            expense.setCategoryName(
+                categoryService.findCategoryById(expense.getCategory().getId()).getName()
+            );
+            expense.setDate(LocalDateTime.parse(expense.getDateTime(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
+            expense.setTime(LocalDateTime.parse(expense.getDateTime(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
         }
+
         model.addAttribute("expenseList", expenseList);
         model.addAttribute("filter", new FilterDTO());
         return "list-page";
     }
 
     @GetMapping("/showUpdate")
-    public String showUpdate(@RequestParam("expId") int id, Model model){
+    public String showUpdate(@RequestParam("expId") int id, Model model, HttpSession session){
+        if (session.getAttribute("client") == null) {
+            return "redirect:/login";
+        }
+
         Expense expense = expenseService.findExpenseById(id);
         ExpenseDTO expenseDTO = new ExpenseDTO();
+
         expenseDTO.setAmount(expense.getAmount());
         expenseDTO.setCategory(expense.getCategory().getName());
         expenseDTO.setDescription(expense.getDescription());
@@ -83,37 +107,55 @@ public class MainController {
     }
 
     @PostMapping("/submitUpdate")
-    public String update(@RequestParam("expId") int id, @ModelAttribute("expense") ExpenseDTO expenseDTO, HttpSession session){
+    public String update(@RequestParam("expId") int id,
+                         @ModelAttribute("expense") ExpenseDTO expenseDTO,
+                         HttpSession session){
+
         Client client = (Client) session.getAttribute("client");
+
+        if (client == null) {
+            return "redirect:/login";
+        }
+
         expenseDTO.setExpenseId(id);
         expenseDTO.setClientId(client.getId());
         expenseService.update(expenseDTO);
+
         return "redirect:/list";
     }
 
     @GetMapping("/delete")
-    public String delete(@RequestParam("expId") int id){
+    public String delete(@RequestParam("expId") int id, HttpSession session){
+        if (session.getAttribute("client") == null) {
+            return "redirect:/login";
+        }
+
         expenseService.deleteExpenseById(id);
         return "redirect:/list";
     }
 
-
     @PostMapping("/processFilter")
-    public String processFilter(@ModelAttribute("filter") FilterDTO filter, Model model){
-        System.out.println("--------------------------------------------------------------");
-        System.out.println("filter values : " + filter);
+    public String processFilter(@ModelAttribute("filter") FilterDTO filter,
+                                Model model,
+                                HttpSession session){
+
+        if (session.getAttribute("client") == null) {
+            return "redirect:/login";
+        }
+
         List<Expense> expenseList = expenseService.findFilterResult(filter);
-        System.out.println("size ----> " + expenseList.size());
-        System.out.println(expenseList);
 
         for (Expense expense : expenseList){
-            expense.setCategoryName(categoryService.findCategoryById(expense.getCategory().getId()).getName());
-            expense.setDate(LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
-            expense.setTime(LocalDateTime.parse(expense.getDateTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
+            expense.setCategoryName(
+                categoryService.findCategoryById(expense.getCategory().getId()).getName()
+            );
+            expense.setDate(LocalDateTime.parse(expense.getDateTime(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate().toString());
+            expense.setTime(LocalDateTime.parse(expense.getDateTime(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime().toString());
         }
+
         model.addAttribute("expenseList", expenseList);
         return "filter-result";
     }
-
-
 }
