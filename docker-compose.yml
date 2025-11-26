@@ -11,6 +11,11 @@ services:
       - "3306:3306"
     networks:
       - expenses-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   expenses-app:
     build: .
@@ -19,7 +24,8 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - expenses-net
 
