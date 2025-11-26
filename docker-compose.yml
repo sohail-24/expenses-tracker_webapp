@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  mysql-db:
+  mysql:
     image: mysql:8.0
-    container_name: mysql-db
+    container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: expenses_tracker
@@ -13,12 +13,13 @@ services:
       - expenses-net
 
   expenses-app:
+    build: .
     image: sohail28/expenses-tracker:latest
     container_name: expenses-app
     ports:
       - "9090:9090"
     depends_on:
-      - mysql-db
+      - mysql
     networks:
       - expenses-net
 
